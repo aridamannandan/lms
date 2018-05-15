@@ -1,12 +1,12 @@
 import express, { Router, Request } from 'express'
-import { Subjects } from '../../models/Subject'
-import { Teachers } from '../../models/Teacher'
+import { Subjects } from '../../db'
+import { Teachers } from '../../db'
 
 export const subjects: Router = Router();
 
 subjects.get('/', (req, res) => {
     return Subjects.findAll({
-        attributes: ['id', 'subjectName']
+        attributes: ['id', 'name']
     })
         .then((allSubjects) => {
             res.status(200).send(allSubjects);
@@ -20,8 +20,7 @@ subjects.get('/', (req, res) => {
 
 subjects.post('/', (request, response) => {
     Subjects.create({
-        subjectName: request.body.name,
-        cid: request.body.courseId
+        name: request.body.name       
     })
     .then((subject) => response.status(200).send(subject))
     .catch((error) => response.send(error))
@@ -29,7 +28,7 @@ subjects.post('/', (request, response) => {
 
 subjects.get('/:id', (req, res) => {
     return Subjects.find({
-        attributes: ['id', 'subjectName'],
+        attributes: ['id', 'name'],
         where: { id: [req.params.id] }
     })
         .then((subject) => {
@@ -42,17 +41,13 @@ subjects.get('/:id', (req, res) => {
         })
 });
 
-subjects.get('/:id/teachers', (req, res) => {
-    return Teachers.findAll({
-        attributes: ['id', 'teacherName'],
-        where: { sid: [req.params.id] }
+subjects.get('/:id/teachers', (req, res) => {   
+    Subjects.findOne({
+        where: {
+            id: req.params.id
+        }
     })
-        .then((teachers) => {
-            res.status(200).send(teachers);
-        })
-        .catch((err) => {
-            res.status(500).send({
-               err
-            })
-        })
+    .then((subject) => {
+        subject.getTeachers().then((teachers) => res.send(teachers))
+    })
 });

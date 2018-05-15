@@ -1,13 +1,9 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const sequelize_1 = __importDefault(require("sequelize"));
-const db_1 = require("../db");
-exports.Courses = db_1.db.define('course', {
-    courseName: {
-        type: sequelize_1.default.STRING,
-        allowNull: false
-    }
-});
+// import Sequelize from 'sequelize';
+// import { db } from '../db'
+// import { Course } from '../interfaces/Course'
+// export const Courses = db.define<Course, any>('course', {
+//     name: {
+//         type: Sequelize.STRING,
+//         allowNull: false
+//     }
+// })

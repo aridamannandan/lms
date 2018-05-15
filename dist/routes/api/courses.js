@@ -1,38 +1,37 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const Course_1 = require("../../models/Course");
-const Batch_1 = require("../../models/Batch");
-const Lecture_1 = require("../../models/Lecture");
-const Teacher_1 = require("../../models/Teacher");
-const Student_1 = require("../../models/Student");
+const db_1 = require("../../db");
+const db_2 = require("../../db");
+const db_3 = require("../../db");
+const db_4 = require("../../db");
 exports.courses = express_1.Router();
 exports.courses.get('/', (req, res) => {
-    return Course_1.Courses.findAll({
-        attributes: ['id', 'courseName']
+    return db_1.Courses.findAll({
+        attributes: ['id', 'name']
     })
         .then((allCourses) => {
         res.status(200).send(allCourses);
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving Courses ' + err
+            err
         });
     });
 });
 exports.courses.post('/', (request, response) => {
     if (!request.body.name)
         return response.status(400).send("COURSE NAME NOT PROVIDED.");
-    Course_1.Courses.create({
-        courseName: request.body.name
+    db_1.Courses.create({
+        name: request.body.name
     })
         .then((course) => {
         response.status(200).send(course);
     });
 });
 exports.courses.get('/:id', (req, res) => {
-    return Course_1.Courses.find({
-        attributes: ['id', 'courseName'],
+    return db_1.Courses.findOne({
+        attributes: ['id', 'name'],
         where: { id: [req.params.id] }
     })
         .then((course) => {
@@ -40,79 +39,90 @@ exports.courses.get('/:id', (req, res) => {
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving Course ' + err
+            err
         });
     });
 });
 exports.courses.get('/:id/batches', (req, res) => {
-    return Batch_1.Batches.findAll({
-        attributes: ['id', 'batchName'],
-        include: [{
-                model: Course_1.Courses,
-                attributes: ['courseName'],
-                required: true
-            }],
-        where: { cid: [req.params.id] }
+    db_1.Courses.findOne({
+        where: {
+            id: req.params.id
+        }
     })
-        .then((batches) => {
-        res.status(200).send(batches);
-    })
-        .catch((err) => {
-        res.status(500).send({
-            error: 'Error retreiving batches ' + err
-        });
+        .then((course) => {
+        course.getBatches().then((batches) => res.send(batches));
     });
 });
 exports.courses.post('/:id/batches', (request, response) => {
     if (isNaN(parseInt(request.params.id)))
         return response.status(400).send("COURSE ID IS NOT VALID");
-    Batch_1.Batches.create({
-        batchName: request.body.name,
-        cid: request.params.id
-    })
-        .then((batch) => response.status(200).send(batch));
-});
-exports.courses.get('/:id/batches/:bid', (req, res) => {
-    return Batch_1.Batches.find({
-        attributes: ['id', 'batchName'],
-        include: [{
-                model: Course_1.Courses,
-                attributes: ['courseName'],
-                required: true
-            }],
+    db_1.Courses.findOne({
         where: {
-            cid: [req.params.id],
-            id: [req.params.bid]
+            id: request.params.id
         }
     })
-        .then((batches) => {
-        res.status(200).send(batches);
+        .then((course) => {
+        db_2.Batches.create({ name: request.body.name }).then((batch) => {
+            course.addBatches(batch).then((ans) => response.send(ans));
+        });
+    });
+});
+exports.courses.get('/:courseId/batches/:batchId', (req, res) => {
+    db_1.Courses.findOne({
+        where: {
+            id: req.params.courseId
+        }
     })
-        .catch((err) => {
-        res.status(500).send({
-            error: 'Error retreiving batches ' + err
+        .then((course) => {
+        course.getBatches().then((batchArray) => {
+            for (let obj of batchArray) {
+                if (obj.CourseBatch.batchId == req.params.batchId)
+                    return res.send(obj);
+            }
+            res.send("NO SUCH BATCH EXIST.");
         });
     });
 });
 exports.courses.get('/:id/batches/:bid/lectures', (req, res) => {
-    // return Lectures.findAll({
-    //     attributes: ['id'],
-    //     include: [{
-    //         model: Batches,
-    //         attributes: ['batchName'],
-    //         include: [{
-    //             model: Courses,
-    //             attributes: ['courseName'],
-    //             required: true
-    //         }],
-    //         where: {
-    //             cid: [req.params.id],
-    //             id: [req.params.bid]
-    //         }
-    //     }]
-    // })
-    Lecture_1.Lectures.findAll({
+    db_1.Courses.findOne({ where: { id: req.params.id } })
+        .then((course) => {
+        if (!course)
+            return res.send("NO SUCH COURSE AND LECTURE EXIST.");
+        course.getBatches()
+            .then((batchArray) => {
+            if (!batchArray)
+                return res.send("NO SUCH BATCH AND LECTURE EXIST.");
+            let exist = false;
+            for (let obj of batchArray) {
+                if (obj.CourseBatch.batchId == req.params.bid) {
+                    exist = true;
+                    db_3.Lectures.findAll({
+                        where: {
+                            batchId: req.params.bid
+                        }
+                    })
+                        .then(lectures => {
+                        return res.send(lectures);
+                    });
+                }
+            }
+            if (!exist)
+                res.send('NO SUCH LECTURE EXIST.');
+        });
+    });
+});
+// courses.post('/:couseId/batches/:batchId/lectures', (request, response) => {
+//     Lectures.create({       
+//         bid: request.params.batchId,       
+//         tid: request.body.teacherId
+//     })
+//     .then((lecture) => response.status(200).send(lecture))
+//     .catch((error) => response.status(400).send(error))
+// });
+exports.courses.get('/:id/batches/:bid/lectures/:lid', (req, res) => {
+    db_3.Lectures.findAll({
         where: {
+            id: req.params.id,
             bid: req.params.bid
         }
     })
@@ -121,55 +131,33 @@ exports.courses.get('/:id/batches/:bid/lectures', (req, res) => {
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving lectures ' + err
+            err
         });
     });
 });
-exports.courses.post('/:couseId/batches/:batchId/lectures', (request, response) => {
-    Lecture_1.Lectures.create({
-        bid: request.params.batchId,
-        tid: request.body.teacherId
-    })
-        .then((lecture) => response.status(200).send(lecture))
-        .catch((error) => response.status(400).send(error));
-});
-exports.courses.get('/:id/batches/:bid/lectures/:lid', (req, res) => {
-    return Lecture_1.Lectures.findOne({
-        attributes: ['id'],
-        include: [{
-                model: Batch_1.Batches,
-                attributes: ['batchName'],
-                include: [{
-                        model: Course_1.Courses,
-                        attributes: ['courseName'],
-                        required: true
-                    }],
-                where: {
-                    cid: [req.params.id],
-                    id: [req.params.bid]
-                }
-            }],
-        where: {
-            id: [req.params.lid]
-        }
-    })
-        .then((lectures) => {
-        res.status(200).send(lectures);
-    })
-        .catch((err) => {
-        res.status(500).send({
-            error: 'Error retreiving lectures ' + err
+exports.courses.post('/:courseId/batches/:batchId/lectures', (request, response) => {
+    db_1.Courses.findOne({ where: { id: request.params.courseId } }).then((course) => {
+        if (!course)
+            return response.send("NO SUCH COURSE EXIST.");
+        course.getBatches().then((batches) => {
+            if (!batches)
+                return response.send("NO SUCH BATCH EXIST.");
+            db_3.Lectures.create({
+                name: request.body.name,
+                batchId: request.params.batchId
+            })
+                .then((lecture) => response.send(lecture));
         });
     });
 });
 exports.courses.get('/:id/batches/:bid/teachers', (req, res) => {
-    return Lecture_1.Lectures.findAll({
+    return db_3.Lectures.findAll({
         attributes: ['id'],
         include: [{
-                model: Batch_1.Batches,
+                model: db_2.Batches,
                 attributes: ['batchName'],
                 include: [{
-                        model: Course_1.Courses,
+                        model: db_1.Courses,
                         attributes: ['courseName'],
                         required: true
                     }],
@@ -179,7 +167,7 @@ exports.courses.get('/:id/batches/:bid/teachers', (req, res) => {
                 }
             },
             {
-                model: Teacher_1.Teachers,
+                model: db_4.Teachers,
                 attributes: ['teacherName']
             }],
         group: ['tid']
@@ -189,38 +177,34 @@ exports.courses.get('/:id/batches/:bid/teachers', (req, res) => {
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving lectures ' + err
+            err
         });
     });
 });
 exports.courses.get('/:id/batches/:bid/students', (req, res) => {
-    return Batch_1.Batches.findAll({
-        attributes: ['batchName'],
-        include: [{
-                model: Course_1.Courses,
-                attributes: ['courseName'],
-            },
-            {
-                model: Student_1.Students,
-                attributes: ['studentName']
-            }],
+    db_1.Courses.findOne({
         where: {
-            cid: [req.params.id],
-            id: [req.params.bid]
+            id: req.params.id
         }
     })
-        .then((students) => {
-        res.status(200).send(students);
-    })
-        .catch((err) => {
-        res.status(500).send({
-            error: 'Error retreiving students ' + err
+        .then((course) => {
+        if (!course)
+            return res.json("NO SUCH COURSE EXIST.");
+        db_2.Batches.findOne({
+            where: {
+                id: req.params.bid
+            }
+        })
+            .then((batch) => {
+            if (!batch)
+                return res.json("NO SUCH BATCH EXIST");
+            batch.getStudents().then((students) => res.send(students));
         });
     });
 });
 //add a course
 exports.courses.post('/', (req, res) => {
-    return Course_1.Courses.create({
+    return db_1.Courses.create({
         courseName: req.body.courseName,
     })
         .then((course) => {
@@ -229,12 +213,12 @@ exports.courses.post('/', (req, res) => {
 });
 //delete a course
 exports.courses.delete('/:id', (req, res) => {
-    return Course_1.Courses.destroy({
+    return db_1.Courses.destroy({
         where: { id: [req.params.id] }
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error deleting course ' + err
+            err
         });
     });
 });

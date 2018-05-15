@@ -1,34 +1,34 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const Batch_1 = require("../../models/Batch");
-const Lecture_1 = require("../../models/Lecture");
-const Teacher_1 = require("../../models/Teacher");
+const db_1 = require("../../db");
+const db_2 = require("../../db");
+const db_3 = require("../../db");
 exports.teachers = express_1.Router();
 exports.teachers.get('/', (req, res) => {
-    return Teacher_1.Teachers.findAll({
-        attributes: ['id', 'teacherName']
+    return db_3.Teachers.findAll({
+        attributes: ['id', 'name']
     })
         .then((allTeachers) => {
         res.status(200).send(allTeachers);
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving teachers ' + err
+            err
         });
     });
 });
 exports.teachers.post('/', (request, response) => {
-    Teacher_1.Teachers.create({
-        teacherName: request.body.name,
-        sid: request.body.subjectId
+    db_3.Teachers.create({
+        name: request.body.name,
+        subjectId: request.body.subjectId
     })
         .then((teacher) => response.status(200).send(teacher))
         .catch((error) => response.send(error));
 });
 exports.teachers.get('/:id', (req, res) => {
-    return Teacher_1.Teachers.find({
-        attributes: ['id', 'teacherName'],
+    return db_3.Teachers.find({
+        attributes: ['id', 'name'],
         where: { id: [req.params.id] }
     })
         .then((teacher) => {
@@ -36,15 +36,15 @@ exports.teachers.get('/:id', (req, res) => {
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving teacher ' + err
+            err
         });
     });
 });
 exports.teachers.get('/:id/batches', (req, res) => {
-    return Lecture_1.Lectures.findAll({
+    return db_2.Lectures.findAll({
         attributes: ['bid'],
         include: [{
-                model: Batch_1.Batches,
+                model: db_1.Batches,
                 attributes: ['batchName']
             }],
         where: { tid: [req.params.id] },
@@ -55,7 +55,7 @@ exports.teachers.get('/:id/batches', (req, res) => {
     })
         .catch((err) => {
         res.status(500).send({
-            error: 'Error retreiving batches ' + err
+            err
         });
     });
 });

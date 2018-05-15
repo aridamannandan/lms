@@ -1,13 +1,13 @@
 import express, { Router, Request } from 'express'
-import { Batches } from '../../models/Batch'
-import { Lectures } from '../../models/Lecture'
-import { Teachers } from '../../models/Teacher'
+import { Batches } from '../../db'
+import { Lectures } from '../../db'
+import { Teachers } from '../../db'
 
 export const teachers: Router = Router();
 
 teachers.get('/', (req, res) => {
     return Teachers.findAll({
-        attributes: ['id', 'teacherName']
+        attributes: ['id', 'name']
     })
         .then((allTeachers) => {
             res.status(200).send(allTeachers);
@@ -21,8 +21,8 @@ teachers.get('/', (req, res) => {
 
 teachers.post('/', (request, response) => {
     Teachers.create({
-        teacherName: request.body.name,
-        sid: request.body.subjectId
+        name: request.body.name,
+        subjectId: request.body.subjectId
     })
     .then((teacher) => response.status(200).send(teacher))
     .catch((error) => response.send(error))
@@ -30,7 +30,7 @@ teachers.post('/', (request, response) => {
 
 teachers.get('/:id', (req, res) => {
     return Teachers.find({
-        attributes: ['id', 'teacherName'],
+        attributes: ['id', 'name'],
         where: { id: [req.params.id] }
     })
         .then((teacher) => {
