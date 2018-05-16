@@ -25,5 +25,13 @@
     "@types/sequelize": "^4.27.17",
     "mysql2": "^1.5.3",
     "typescript": "^2.8.3"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/aridamannandan/lms.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aridamannandan/lms/issues"
+  },
+  "homepage": "https://github.com/aridamannandan/lms#readme"
 }
