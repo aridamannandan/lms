@@ -124,21 +124,14 @@ courses.get('/:id/batches/:bid/lectures', (req, res) => {
            })   
 });
 
-// courses.post('/:couseId/batches/:batchId/lectures', (request, response) => {
-//     Lectures.create({       
-//         bid: request.params.batchId,       
-//         tid: request.body.teacherId
-//     })
-//     .then((lecture) => response.status(200).send(lecture))
-//     .catch((error) => response.status(400).send(error))
-// });
+
 
 courses.get('/:id/batches/:bid/lectures/:lid', (req, res) => {
     
       Lectures.findAll({
           where: {
-              id: req.params.id,
-              bid: req.params.bid
+              id: req.params.lid,
+              batchId: req.params.bid
           }
       })
         .then((lectures) => {
